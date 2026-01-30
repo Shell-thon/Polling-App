@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useAuthContext } from '@/context/AuthContext';
 import { Button } from './ui/button';
+import { ProfileDropdown } from './ProfileDropdown';
 
 export default function Header() {
   const { user, signOut: logout } = useAuthContext();
@@ -20,10 +21,7 @@ export default function Header() {
 
         <div className="flex items-center gap-3">
           {user ? (
-            <>
-              <span className="text-sm text-zinc-700 dark:text-zinc-200">{(user as any).user_metadata?.name || (user as any).name || user.email}</span>
-              <Button onClick={() => logout()} variant="outline">Sign out</Button>
-            </>
+            <ProfileDropdown />
           ) : (
             <>
               <Link href="/auth/login"><Button variant="outline">Sign in</Button></Link>

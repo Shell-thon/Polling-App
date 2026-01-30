@@ -2,13 +2,17 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { fetchPolls, Poll } from '@/lib/pollsDb';
 
 export default function PollsPage() {
   const [polls, setPolls] = useState<Poll[]>([]);
+  const [filteredPolls, setFilteredPolls] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
 
   useEffect(() => {
     async function loadPolls() {
@@ -18,6 +22,28 @@ export default function PollsPage() {
     }
     loadPolls();
   }, []);
+
+  useEffect(() => {
+    let results = polls;
+
+    // Filter by search term
+    if (searchTerm) {
+      results = results.filter(
+        (poll) =>
+          poll.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          poll.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Sort
+    if (sortBy === 'popular') {
+      results.sort((a, b) => b.totalVotes - a.totalVotes);
+    } else {
+      results.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    }
+
+    setFilteredPolls(results);
+  }, [polls, searchTerm, sortBy]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
@@ -29,9 +55,42 @@ export default function PollsPage() {
           </Link>
         </div>
 
+        {/* Search and Filter */}
+        <div className="mb-6 space-y-3">
+          <Input
+            type="text"
+            placeholder="Search polls..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSortBy('recent')}
+              className={`px-3 py-1 rounded text-sm font-medium transition ${
+                sortBy === 'recent'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Recent
+            </button>
+            <button
+              onClick={() => setSortBy('popular')}
+              className={`px-3 py-1 rounded text-sm font-medium transition ${
+                sortBy === 'popular'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Popular
+            </button>
+          </div>
+        </div>
+
         {isLoading ? (
           <p className="text-center text-zinc-600 dark:text-zinc-400">Loading polls...</p>
-        ) : polls.length === 0 ? (
+        ) : filteredPolls.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
               <p className="text-center text-zinc-600 dark:text-zinc-400 mb-4">
@@ -46,7 +105,7 @@ export default function PollsPage() {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {polls.map((poll) => (
+            {filteredPolls.map((poll) => (
               <Link key={poll.id} href={`/polls/${poll.id}`} className="no-underline">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
